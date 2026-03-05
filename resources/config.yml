@@ -6,29 +6,36 @@ teleport:
 
 tiers:
   common:
-    color: "§f"
     stack: 16
+    color: "§f"
+
   uncommon:
-    color: "§a"
     stack: 12
+    color: "§a"
+
   rare:
-    color: "§9"
     stack: 8
+    color: "§9"
+
   legendary:
-    color: "§6"
     stack: 4
+    color: "§6"
 
 relics:
-  legendary_relic:
-    tier: legendary
-    name: "§6✦ Legendary Relic"
+
+  diamond_relic:
+    tier: rare
+    name: "§9✦ Diamond Relic"
     lore:
-      - "§7Right-click chest to open."
-      - "§7Contains powerful rewards."
+      - "§7Right click a relic chest"
+      - "§7to receive rewards"
+
     rewards:
+
       - command: "give {player} diamond 40"
-        chance: 50
-        message: "§aYou won 40 diamonds!"
+        chance: 60
+        message: "§aYou received 40 diamonds!"
+
       - command: "give {player} emerald 20"
-        chance: 50
-        message: "§aYou won 20 emeralds!"
+        chance: 40
+        message: "§aYou received 20 emeralds!"
