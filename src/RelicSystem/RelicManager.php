@@ -1,113 +1,126 @@
 <?php
 
-declare(strict_types=1);
-
 namespace RelicSystem;
 
 use pocketmine\player\Player;
 use pocketmine\item\VanillaItems;
-use pocketmine\nbt\tag\StringTag;
 use pocketmine\item\Item;
-use pocketmine\item\enchantment\EnchantmentInstance;
-use pocketmine\item\enchantment\VanillaEnchantments;
+use pocketmine\utils\Config;
+use pocketmine\utils\TextFormat;
+use pocketmine\world\Position;
+use pocketmine\Server;
 
 class RelicManager{
 
     private Main $plugin;
+    private Config $relics;
+    private Config $chests;
 
     public function __construct(Main $plugin){
         $this->plugin = $plugin;
+
+        @mkdir($plugin->getDataFolder());
+
+        $this->relics = new Config($plugin->getDataFolder() . "relics.yml", Config::YAML);
+        $this->chests = new Config($plugin->getDataFolder() . "chests.yml", Config::YAML);
     }
 
-    /**
-     * Creates a relic item
-     */
-    public function createRelic(string $name) : ?Item{
+    public function getRelics(): Config{
+        return $this->relics;
+    }
 
-        $relics = $this->plugin->getConfig()->get("relics");
+    public function getChests(): Config{
+        return $this->chests;
+    }
 
-        if(!isset($relics[$name])){
-            return null;
-        }
+    public function saveChests(): void{
+        $this->chests->save();
+    }
 
-        $data = $relics[$name];
+    public function createRelicItem(string $name, int $amount = 1): Item{
+        $data = $this->relics->get($name);
 
-        // relic item = glowing nether star
         $item = VanillaItems::NETHER_STAR();
+        $item->setCount($amount);
 
-        $item->setCustomName($data["name"]);
+        $customName = TextFormat::colorize($data["name"]);
+        $item->setCustomName($customName);
 
-        if(isset($data["lore"])){
-            $item->setLore($data["lore"]);
+        $lore = [];
+        foreach($data["lore"] as $line){
+            $lore[] = TextFormat::colorize($line);
         }
 
-        // Add NBT tag so the plugin can identify the relic
-        $item->getNamedTag()->setTag("relic_name", new StringTag($name));
+        $item->setLore($lore);
 
-        // Add glow effect
-        $item->addEnchantment(
-            new EnchantmentInstance(VanillaEnchantments::UNBREAKING(), 1)
-        );
+        $nbt = $item->getNamedTag();
+        $nbt->setString("relic_name", $name);
+        $item->setNamedTag($nbt);
+
+        $item->setEnchantmentGlintOverride(true);
 
         return $item;
     }
 
-    /**
-     * Activates relic reward
-     */
-    public function activateRelic(Player $player, string $name) : void{
+    public function isRelic(Item $item): bool{
+        return $item->getNamedTag()->getTag("relic_name") !== null;
+    }
 
-        $relics = $this->plugin->getConfig()->get("relics");
+    public function getRelicName(Item $item): ?string{
+        return $item->getNamedTag()->getString("relic_name", "");
+    }
 
-        if(!isset($relics[$name])){
+    public function addChest(Position $pos, string $relic): void{
+        $key = $pos->getWorld()->getFolderName() . ":" . $pos->getFloorX() . ":" . $pos->getFloorY() . ":" . $pos->getFloorZ();
+
+        $this->chests->set($key, [
+            "world" => $pos->getWorld()->getFolderName(),
+            "x" => $pos->getFloorX(),
+            "y" => $pos->getFloorY(),
+            "z" => $pos->getFloorZ(),
+            "relic" => $relic
+        ]);
+
+        $this->chests->save();
+    }
+
+    public function isRelicChest(Position $pos): bool{
+        $key = $pos->getWorld()->getFolderName() . ":" . $pos->getFloorX() . ":" . $pos->getFloorY() . ":" . $pos->getFloorZ();
+        return $this->chests->exists($key);
+    }
+
+    public function openRelic(Player $player, string $relic): void{
+        $data = $this->relics->get($relic);
+
+        if(!isset($data["commands"])){
             return;
         }
 
-        $data = $relics[$name];
+        $commands = $data["commands"];
 
-        if(!isset($data["rewards"])){
-            return;
+        $totalChance = 0;
+        foreach($commands as $cmd){
+            $totalChance += $cmd["chance"];
         }
 
-        $rewards = $data["rewards"];
-
-        // Calculate total weight
-        $totalWeight = 0;
-
-        foreach($rewards as $reward){
-            $totalWeight += (int)$reward["chance"];
-        }
-
-        if($totalWeight <= 0){
-            return;
-        }
-
-        // Random roll
-        $random = mt_rand(1, $totalWeight);
+        $rand = mt_rand(1, $totalChance);
         $current = 0;
 
-        foreach($rewards as $reward){
+        foreach($commands as $cmd){
 
-            $current += (int)$reward["chance"];
+            $current += $cmd["chance"];
 
-            if($random <= $current){
+            if($rand <= $current){
 
-                // Replace player placeholder
-                $command = str_replace(
-                    "{player}",
-                    $player->getName(),
-                    $reward["command"]
-                );
+                $command = str_replace("{player}", $player->getName(), $cmd["command"]);
 
-                // Execute command as console
-                $this->plugin->getServer()->dispatchCommand(
-                    $this->plugin->getServer()->getConsoleSender(),
+                Server::getInstance()->dispatchCommand(
+                    Server::getInstance()->getCommandMap()->getCommand("say")->getOwningPlugin(),
                     $command
                 );
 
-                // Send reward message
-                if(isset($reward["message"])){
-                    $player->sendMessage($reward["message"]);
+                if(isset($cmd["message"])){
+                    $player->sendMessage(TextFormat::colorize($cmd["message"]));
                 }
 
                 return;
