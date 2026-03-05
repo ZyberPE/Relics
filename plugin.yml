@@ -1,13 +1,18 @@
 name: RelicSystem
 main: RelicSystem\Main
-version: 2.0.0
+version: 1.0.0
 api: 5.0.0
 author: zyberpe
 
 commands:
   relic:
+    description: Relic admin command
+    usage: "/relic <create|give>"
     permission: relic.admin
+
   relics:
+    description: Teleport to relic area
+    usage: "/relics"
     permission: relic.use
 
 permissions:
