@@ -1,0 +1,34 @@
+teleport:
+  world: "world"
+  x: 100
+  y: 65
+  z: 100
+
+tiers:
+  common:
+    color: "§f"
+    stack: 16
+  uncommon:
+    color: "§a"
+    stack: 12
+  rare:
+    color: "§9"
+    stack: 8
+  legendary:
+    color: "§6"
+    stack: 4
+
+relics:
+  legendary_relic:
+    tier: legendary
+    name: "§6✦ Legendary Relic"
+    lore:
+      - "§7Right-click chest to open."
+      - "§7Contains powerful rewards."
+    rewards:
+      - command: "give {player} diamond 40"
+        chance: 50
+        message: "§aYou won 40 diamonds!"
+      - command: "give {player} emerald 20"
+        chance: 50
+        message: "§aYou won 20 emeralds!"
