@@ -7,6 +7,7 @@ namespace RelicSystem;
 use pocketmine\player\Player;
 use pocketmine\item\VanillaItems;
 use pocketmine\nbt\tag\StringTag;
+use pocketmine\item\Item;
 use pocketmine\item\enchantment\EnchantmentInstance;
 use pocketmine\item\enchantment\VanillaEnchantments;
 
@@ -18,54 +19,97 @@ class RelicManager{
         $this->plugin = $plugin;
     }
 
-    public function createRelic(string $name){
+    /**
+     * Creates a relic item
+     */
+    public function createRelic(string $name) : ?Item{
 
-        $data = $this->plugin->getConfig()->get("relics")[$name] ?? null;
-        if($data === null) return null;
+        $relics = $this->plugin->getConfig()->get("relics");
 
+        if(!isset($relics[$name])){
+            return null;
+        }
+
+        $data = $relics[$name];
+
+        // relic item = glowing nether star
         $item = VanillaItems::NETHER_STAR();
 
         $item->setCustomName($data["name"]);
-        $item->setLore($data["lore"]);
 
-        $item->getNamedTag()->setTag("relic_name",new StringTag($name));
+        if(isset($data["lore"])){
+            $item->setLore($data["lore"]);
+        }
 
+        // Add NBT tag so the plugin can identify the relic
+        $item->getNamedTag()->setTag("relic_name", new StringTag($name));
+
+        // Add glow effect
         $item->addEnchantment(
-            new EnchantmentInstance(VanillaEnchantments::UNBREAKING(),1)
+            new EnchantmentInstance(VanillaEnchantments::UNBREAKING(), 1)
         );
 
         return $item;
     }
 
-    public function activateRelic(Player $player,string $name): void{
+    /**
+     * Activates relic reward
+     */
+    public function activateRelic(Player $player, string $name) : void{
 
-        $data = $this->plugin->getConfig()->get("relics")[$name];
+        $relics = $this->plugin->getConfig()->get("relics");
+
+        if(!isset($relics[$name])){
+            return;
+        }
+
+        $data = $relics[$name];
+
+        if(!isset($data["rewards"])){
+            return;
+        }
 
         $rewards = $data["rewards"];
 
-        $total = 0;
+        // Calculate total weight
+        $totalWeight = 0;
 
-        foreach($rewards as $r){
-            $total += $r["chance"];
+        foreach($rewards as $reward){
+            $totalWeight += (int)$reward["chance"];
         }
 
-        $rand = mt_rand(1,$total);
+        if($totalWeight <= 0){
+            return;
+        }
+
+        // Random roll
+        $random = mt_rand(1, $totalWeight);
         $current = 0;
 
         foreach($rewards as $reward){
 
-            $current += $reward["chance"];
+            $current += (int)$reward["chance"];
 
-            if($rand <= $current){
+            if($random <= $current){
 
-                $cmd = str_replace("{player}",$player->getName(),$reward["command"]);
-
-                $this->plugin->getServer()->dispatchCommand(
-                    $this->plugin->getServer()->getConsoleSender(),
-                    $cmd
+                // Replace player placeholder
+                $command = str_replace(
+                    "{player}",
+                    $player->getName(),
+                    $reward["command"]
                 );
 
-                $player->sendMessage($reward["message"]);
+                // Execute command as console
+                $this->plugin->getServer()->dispatchCommand(
+                    $this->plugin->getServer()->getConsoleSender(),
+                    $command
+                );
+
+                // Send reward message
+                if(isset($reward["message"])){
+                    $player->sendMessage($reward["message"]);
+                }
+
                 return;
             }
         }
