@@ -1,0 +1,17 @@
+name: RelicSystem
+main: RelicSystem\Main
+version: 2.0.0
+api: 5.0.0
+author: zyberpe
+
+commands:
+  relic:
+    permission: relic.admin
+  relics:
+    permission: relic.use
+
+permissions:
+  relic.admin:
+    default: op
+  relic.use:
+    default: true
