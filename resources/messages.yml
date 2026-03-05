@@ -1,10 +1,12 @@
 prefix: "§6[Relics] §r"
 
-no-permission: "§cYou don't have permission."
-player-only: "§cUse in-game."
-relic-not-found: "§cRelic not found."
-relic-created: "§aRelic chest created."
-relic-given: "§aRelic given to player."
-teleported: "§aTeleported!"
-chest-saved: "§aChest saved successfully."
-invalid-world: "§cWorld not found."
+no-permission: "§cYou don't have permission"
+player-only: "§cRun this in game"
+
+relic-created: "§aRelic chest created"
+relic-given: "§aRelic given"
+
+relic-not-found: "§cRelic not found"
+
+teleported: "§aTeleported to relics"
+world-not-found: "§cTeleport world missing"
